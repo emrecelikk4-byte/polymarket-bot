@@ -4,39 +4,45 @@ const { Wallet } = require("ethers");
 const app = express();
 app.use(express.json());
 
-// Cüzdanı yükle
+// Loglarda ne olup bittiğini görmek için kontrol
+console.log("Sistem baslatiliyor...");
+console.log("Mevcut Degiskenler:", Object.keys(process.env).filter(k => k === "PRIVATE_KEY"));
+
 let wallet = null;
 const rawKey = process.env.PRIVATE_KEY;
 
-if (rawKey) {
+if (rawKey && rawKey.length > 10) {
     try {
         const cleanKey = rawKey.trim().replace(/^["']|["']$/g, '');
         const finalKey = cleanKey.startsWith("0x") ? cleanKey : "0x" + cleanKey;
         wallet = new Wallet(finalKey);
-        console.log("✅ Cüzdan Hazır: " + wallet.address);
+        console.log("✅ CUZDAN BASARIYLA BAGLANDI: " + wallet.address);
     } catch (e) {
-        console.error("❌ Cüzdan Hatası: " + e.message);
+        console.error("❌ ANAHTAR FORMATI HATALI: " + e.message);
     }
+} else {
+    console.error("❌ KRITIK HATA: PRIVATE_KEY degiskeni bos veya cok kisa!");
 }
 
-// ANA SAYFA (Tarayıcıda göreceğin yer)
 app.get("/", (req, res) => {
-    res.status(200).send(wallet ? `Bot Aktif 🚀 Adres: ${wallet.address}` : "Bot calisiyor ama anahtar eksik!");
+    if (wallet) {
+        res.send(`Bot Aktif 🚀 Adres: ${wallet.address}`);
+    } else {
+        res.send(`Bot calisiyor ama anahtar okunmadi! Sistemdeki anahtar uzunlugu: ${rawKey ? rawKey.length : 0}`);
+    }
 });
 
-// İŞLEM NOKTASI
 app.post("/trade", async (req, res) => {
-    if (!wallet) return res.status(500).json({ error: "Cüzdan yüklü değil" });
+    if (!wallet) return res.status(500).json({ error: "Cuzdan yuklu degil" });
     try {
         const signature = await wallet.signMessage(JSON.stringify(req.body));
-        res.json({ status: "ok", signature: signature, address: wallet.address });
+        res.json({ status: "ok", signature, address: wallet.address });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// RAILWAY İÇİN KRİTİK PORT AYARI
-const PORT = process.env.PORT || 8080; // Railway 8080 portunu sever
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Sunucu ${PORT} portunda ve 0.0.0.0 arayüzünde dinliyor.`);
+    console.log(`Sunucu ${PORT} portunda hazir.`);
 });
