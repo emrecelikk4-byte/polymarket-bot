@@ -23,4 +23,5 @@ app.post("/trade", async (req, res) => {
   });
 });
 
-app.listen(3000, () => console.log("çalışıyor"));
+const PORT = process.env.PORT || 3000; // Railway portu yoksa local 3000 kullan
+app.listen(PORT, () => console.log(`Bot çalışıyor 🚀 Port: ${PORT}`));
