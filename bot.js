@@ -1,47 +1,29 @@
 const express = require("express");
-const { Wallet } = require("ethers");
-const axios = require("axios");
-
+const Binance = require("node-binance-api");
 const app = express();
 app.use(express.json());
 
-const wallet = new Wallet(process.env.PK || process.env.PRIVATE_KEY);
+const binance = new Binance().options({
+  APIKEY: process.env.BINANCE_API_KEY,
+  APISECRET: process.env.BINANCE_API_SECRET
+});
+
+app.get("/", (req, res) => res.send("Bot Ayakta! 🚀"));
 
 app.post("/trade", async (req, res) => {
     try {
-        // Make.com'dan gelen evrensel veriler
-        const { tokenId, side, price } = req.body; 
-        const size = "10"; // Sabit 10 dolarlık miktar
-
-        // 1. İmzalanacak Mesajın Hazırlanması
-        const timestamp = Math.floor(Date.now() / 1000);
-        const message = `Polymarket Trade: ${side} ${size} of ${tokenId} at ${price}`;
-        const signature = await wallet.signMessage(message);
-
-        // 2. Polymarket CLOB (Merkezi Defter) API'ye Emir Gönderimi
-        const response = await axios.post("https://clob.polymarket.com/order", {
-            token_id: tokenId,
-            price: price || "0.99", // Fiyat gelmezse en üstten alması için 0.99
-            size: size,
-            side: side, // BUY (Evet/Lehte) veya SELL (Hayır/Aleyhte)
-            signature: signature,
-            owner: wallet.address,
-            timestamp: timestamp
-        }, {
-            headers: {
-                'POLY-API-KEY': req.headers['poly-api-key'],
-                'POLY-SECRET': req.headers['poly-secret'],
-                'POLY-PASSPHRASE': req.headers['poly-passphrase']
-            }
-        });
-
-        res.json({ status: "SUCCESS", data: response.data });
+        let { symbol } = req.body;
+        const cleanSymbol = symbol.replace(/\s+/g, '').toUpperCase() + "USDT";
+        console.log(`İşlem: ${cleanSymbol}`);
+        
+        // 15 dolarlık market alımı (Cross Margin)
+        const order = await binance.mgMarketBuy(cleanSymbol, 15);
+        res.json({ status: "SUCCESS", data: order });
     } catch (err) {
-        console.error("Hata Detayı:", err.response ? err.response.data : err.message);
-        res.status(500).json({ status: "ERROR", message: err.response ? err.response.data : err.message });
+        console.error("Hata:", err.message);
+        res.status(500).json({ status: "ERROR", message: err.message });
     }
 });
-app.get("/", (req, res) => {
-    res.send("Bot Aktif 🚀 Emirleri Bekliyorum...");
-});
-app.listen(process.env.PORT || 8080);
+
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log(`Server ${PORT} portunda aktif.`));
