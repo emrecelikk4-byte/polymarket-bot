@@ -41,5 +41,7 @@ app.post("/trade", async (req, res) => {
         res.status(500).json({ status: "ERROR", message: err.response ? err.response.data : err.message });
     }
 });
-
+app.get("/", (req, res) => {
+    res.send("Bot Aktif 🚀 Emirleri Bekliyorum...");
+});
 app.listen(process.env.PORT || 8080);
