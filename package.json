@@ -1,10 +1,12 @@
 {
   "name": "polymarket-bot",
   "version": "1.0.0",
+  "description": "Polymarket Transaction Signer",
   "main": "bot.js",
   "dependencies": {
-    "express": "^4.18.2",
-    "ethers": "^6.10.0"
+    "axios": "^1.6.0",
+    "ethers": "^6.10.0",
+    "express": "^4.18.2"
   },
   "scripts": {
     "start": "node bot.js"
