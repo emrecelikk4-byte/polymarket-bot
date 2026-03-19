@@ -1,11 +1,9 @@
 {
-  "name": "polymarket-bot",
+  "name": "binance-bot",
   "version": "1.0.0",
-  "description": "Polymarket Transaction Signer",
   "main": "bot.js",
   "dependencies": {
-    "axios": "^1.6.0",
-    "ethers": "^6.10.0",
+    "node-binance-api": "^0.13.1",
     "express": "^4.18.2"
   },
   "scripts": {
