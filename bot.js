@@ -4,45 +4,42 @@ const { Wallet } = require("ethers");
 const app = express();
 app.use(express.json());
 
-// Loglarda ne olup bittiğini görmek için kontrol
-console.log("Sistem baslatiliyor...");
-console.log("Mevcut Degiskenler:", Object.keys(process.env).filter(k => k === "PRIVATE_KEY"));
-
-let wallet = null;
-const rawKey = process.env.PRIVATE_KEY;
-
-if (rawKey && rawKey.length > 10) {
+// ANAHTARI TEMİZLEME VE DOĞRULAMA
+const getWallet = () => {
     try {
-        const cleanKey = rawKey.trim().replace(/^["']|["']$/g, '');
-        const finalKey = cleanKey.startsWith("0x") ? cleanKey : "0x" + cleanKey;
-        wallet = new Wallet(finalKey);
-        console.log("✅ CUZDAN BASARIYLA BAGLANDI: " + wallet.address);
+        // Değişken ismini 'PK' olarak kısalttık, çakışma olmasın diye
+        let key = process.env.PK || ""; 
+        key = key.trim().replace(/["']/g, ""); // Tırnakları temizle
+        
+        if (!key) return null;
+        if (!key.startsWith("0x") && key.length === 64) key = "0x" + key;
+        
+        return new Wallet(key);
     } catch (e) {
-        console.error("❌ ANAHTAR FORMATI HATALI: " + e.message);
+        return null;
     }
-} else {
-    console.error("❌ KRITIK HATA: PRIVATE_KEY degiskeni bos veya cok kisa!");
-}
+};
+
+const wallet = getWallet();
 
 app.get("/", (req, res) => {
+    const rawKey = process.env.PK || "";
     if (wallet) {
-        res.send(`Bot Aktif 🚀 Adres: ${wallet.address}`);
+        res.send(`<h1>Bot Hazır ✅</h1><p>Cüzdan Adresi: ${wallet.address}</p>`);
     } else {
-        res.send(`Bot calisiyor ama anahtar okunmadi! Sistemdeki anahtar uzunlugu: ${rawKey ? rawKey.length : 0}`);
+        res.send(`<h1>Hata ❌</h1><p>Gelen Anahtar Uzunluğu: ${rawKey.length}</p><p>Gelen Veri (İlk 3 hane): ${rawKey.substring(0, 3)}</p>`);
     }
 });
 
 app.post("/trade", async (req, res) => {
-    if (!wallet) return res.status(500).json({ error: "Cuzdan yuklu degil" });
+    if (!wallet) return res.status(500).json({ error: "Cüzdan yüklenemedi" });
     try {
         const signature = await wallet.signMessage(JSON.stringify(req.body));
-        res.json({ status: "ok", signature, address: wallet.address });
+        res.json({ status: "ok", signature });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Sunucu ${PORT} portunda hazir.`);
-});
+app.listen(PORT, "0.0.0.0", () => console.log(`Sunucu ${PORT} portunda aktif.`));
