@@ -13,17 +13,21 @@ app.get("/", (req, res) => res.send("Bot Ayakta! 🚀"));
 app.post("/trade", async (req, res) => {
     try {
         let { symbol } = req.body;
-        const cleanSymbol = symbol.replace(/\s+/g, '').toUpperCase() + "USDT";
-        console.log(`İşlem: ${cleanSymbol}`);
+        if (!symbol) return res.status(400).send("Sembol yok");
+
+        // Sembolü temizle (Örn: "BTC" -> "BTCUSDT")
+        let cleanSymbol = symbol.replace(/[^a-zA-Z]/g, "").toUpperCase();
+        if (!cleanSymbol.endsWith("USDT")) cleanSymbol += "USDT";
+
+        console.log(`${cleanSymbol} için 15 USDT alım emri gönderiliyor...`);
         
-        // 15 dolarlık market alımı (Cross Margin)
+        // 15 USDT'lik Cross Margin Market Alımı
         const order = await binance.mgMarketBuy(cleanSymbol, 15);
         res.json({ status: "SUCCESS", data: order });
     } catch (err) {
-        console.error("Hata:", err.message);
+        console.error("Hata:", err.body || err.message);
         res.status(500).json({ status: "ERROR", message: err.message });
     }
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Server ${PORT} portunda aktif.`));
+app.listen(process.env.PORT || 8080);
